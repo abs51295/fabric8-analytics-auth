@@ -16,17 +16,21 @@ def decode_token(app, token, audiences=None):
 
     if token.startswith('Bearer '):
         _, token = token.split(' ', 1)
+        app.logger.info("Token: %s", token)
 
     decoded_token = None
 
     pub_keys = fetch_public_keys(app)
+    app.logger.info("Public keys: %s", pub_keys)
     for pub_key in pub_keys:
         public_key = pub_key.get("key", "")
-
+        app.logger.info("Using public key: %s", public_key)
         if audiences is None:
             # Service account does not have audiences
             try:
+                app.logger.info("Decoding service account token...............")
                 decoded_token = jwt.decode(token, public_key, algorithms=['RS256'])
+                app.logger.info("Service account token decoded..........")
             except jwt.InvalidTokenError:
                 app.logger.error("Service account token couldn't be decoded, token is invalid")
                 decoded_token = None
@@ -35,7 +39,9 @@ def decode_token(app, token, audiences=None):
                 decoded_token = None
         else:
             # For User account check if the audience is valid
+            app.logger.info("Decoding user account token...........")
             for audience in audiences:
+                app.logger.info("Using audience %s", audience)
                 try:
                     decoded_token = jwt.decode(token, public_key,
                                                algorithms=['RS256'],
@@ -51,6 +57,7 @@ def decode_token(app, token, audiences=None):
                     decoded_token = None
 
             if decoded_token:
+                app.logger.info("User token decoded..........")
                 break
 
     g.decoded_token = decoded_token or {}
